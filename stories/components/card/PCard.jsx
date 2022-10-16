@@ -14,12 +14,82 @@ import Backdrop from '@mui/material/Backdrop';
 import Modal from '@mui/material/Modal';
 import Fade from '@mui/material/Fade';
 import { useQuery } from "@tanstack/react-query";
-import Lottie from "lottie-react";
-import pokeBallLoading from "assets/lottie-json/pokeball-loading-animation.json";
+import Chip from '@mui/material/Chip';
 import Image from 'next/image';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import IconButton from '@mui/material/IconButton';
+import LinearProgress, { linearProgressClasses } from '@mui/material/LinearProgress';
+
+const BorderLinearProgress = styled(LinearProgress)(({ theme }) => ({
+  height: 10,
+  borderRadius: 5,
+  [`&.${linearProgressClasses.colorPrimary}`]: {
+    backgroundColor: theme.palette.grey[theme.palette.mode === 'light' ? 200 : 800],
+  },
+  [`& .${linearProgressClasses.bar}`]: {
+    borderRadius: 5,
+    backgroundColor: theme.palette.mode === 'light' ? '#1a90ff' : '#308fe8',
+  },
+}));
+
+const Chiped = styled(Chip)`
+  margin: 5px;
+  ${({ label }) => label == 'poison' && `
+    background: #a040a0;
+  `}
+  ${({ label }) => label == 'normal' && `
+  background: #a8a878;
+  `}
+  ${({ label }) => label == 'fire' && `
+  background: #f08030;
+  `}
+  ${({ label }) => label == 'water' && `
+  background: #6890f0;
+  `}
+  ${({ label }) => label == 'grass' && `
+  background: #78c850;
+  `}
+  ${({ label }) => label == 'electric' && `
+  background: #f8d030;
+  `}
+  ${({ label }) => label == 'ice' && `
+  background: #98d8d8;
+  `}
+  ${({ label }) => label == 'fighting' && `
+  background: #c03129;
+  `}
+  ${({ label }) => label == 'ground' && `
+  background: #e0c068;
+  `}
+  ${({ label }) => label == 'flying' && `
+  background: #a890f0;
+  `}
+  ${({ label }) => label == 'psychic' && `
+  background: #f85888;
+  `}
+  ${({ label }) => label == 'bug' && `
+  background: #a8b820;
+  `}
+  ${({ label }) => label == 'rock' && `
+  background: #b8a038;
+  `}
+  ${({ label }) => label == 'ghost' && `
+  background: #705898;
+  `}
+  ${({ label }) => label == 'dragon' && `
+  background: #7038f8;
+  `}
+  ${({ label }) => label == 'dark' && `
+  background: #705848;
+  `}
+  ${({ label }) => label == 'steel' && `
+  background: #b8b8d0;
+  `}
+  ${({ label }) => label == 'fairy' && `
+  background: #ee99ac;
+  `}
+`;
 
 const ColorButton = styled(Button)(({ theme }) => ({
   color: theme.palette.getContrastText(orange[500]),
@@ -37,7 +107,6 @@ const style = {
   top: '50%',
   left: '50%',
   transform: 'translate(-50%, -50%)',
-  width: 400,
   bgcolor: 'background.paper',
   border: '2px solid orange',
   borderRadius: '10px',
@@ -46,19 +115,40 @@ const style = {
 };
 
 export const PCard = ({item,  ...props }) => {
-    const theme = useTheme();
     const [open, setOpen] = useState(false);
+    const [isFav, setIsFav] = useState([]);
+
     const handleOpen = () => setOpen(true);
     const handleClose = () => setOpen(false);
 
-    const image = `https://raw.githubusercontent.com/PokeAPI/sprites/2ee90acbaea788a62fc9a45657f70f94d5dafa4f/sprites/pokemon/other/dream-world/${item.url.split("/")[6]}.svg`;
+    const id = item.url ? item.url.split('/')[6] : item.pokemon.url.split('/')[6]
+
+    if (id < 10) id = `0${id}`
+    if (id < 100) id = `0${id}`
+
+    const image = `https://assets.pokemon.com/assets/cms2/img/pokedex/full/${id}.png`;
+
+    const checkImage = (img) => {
+      if (id > 10000) {
+        return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`
+      } else {
+        return img
+      }
+    }
+
+    useEffect(() => {
+      setIsFav(() => JSON.parse(localStorage.getItem('fav_list')));
+    }, []);
+
+    const getDetail = () => {
+      return fetch(item.url ? item.url : item.pokemon.url).then(res => res.json())
+    }
+
+    const normalise = (value) => ((value - 0) * 100) / (200 - 0);
+
 
     const { isLoading, error, data } = useQuery(
-      ['pokeDetail'],
-      () =>
-        fetch(item.url).then(res =>
-          res.json()
-        ),
+      ['pokeDetail'], getDetail,
       { enabled: open }
     );
 
@@ -68,8 +158,52 @@ export const PCard = ({item,  ...props }) => {
 
     if (error) return "Error";
 
+    const renderTypes = () => {
+      return data.types.map((item, index) => {
+        return (
+          <>
+            <Chiped key={index} label={item.type.name} />
+          </>
+        )
+      })
+    }
+
+    const renderStats = () => {
+      return data.stats.map((item, index) => {
+        return (
+          <div key={index} className="stats">
+            <span>{item.stat.name}</span>
+            <BorderLinearProgress variant="determinate" value={normalise(item.base_stat)} />
+          </div>
+        )
+      })
+    }
+
+    const renderMoves = () => {
+      return data.moves.slice(0, 3).map((item, index) => {
+        return (
+          <>
+            <span key={index}>{item.move.name}</span><br/>
+          </>
+        )
+      })
+    }
+    
+
     const addFav = (id) => {
-      // console.log("id", id);
+      const arr = localStorage.getItem('fav_list');
+      let favList = JSON.parse(arr);
+      favList.push(id);
+      localStorage.setItem('fav_list', JSON.stringify(favList));
+      setIsFav(favList);
+    }
+
+    const removeFav = (id) => {
+      const arr = localStorage.getItem('fav_list');
+      let favList = JSON.parse(arr);
+      favList.splice(favList.indexOf(id), 1);
+      localStorage.setItem('fav_list', JSON.stringify(favList));
+      setIsFav(favList);
     }
 
     const renderModal = () => {
@@ -89,20 +223,25 @@ export const PCard = ({item,  ...props }) => {
         >
           <Fade in={open}>
             <Box sx={style}>
-              {isLoading ? () => <Lottie animationData={pokeBallLoading} /> : (
+              {data && (
                 <main>
                   <div className="flex flex-row">
-                    <div className='bg-red-500 h-full w-full'>
-                      <h1>SECTION 1</h1>
+                    <div className='text-black h-full w-full'>
+                    {renderStats()}
                     </div>
                     <Image
-                      src={image}
+                      src={checkImage(image)}
                       width="500"
                       height="500"
                       alt='Pokemon image'
                     />
-                    <div className='bg-red-500 h-full w-full'>
-                      <h1>SECTION 1</h1>
+                    <div className='text-black h-full w-full'>
+                      <span>Weight: {data.weight}</span><br />
+                      {renderTypes()}
+                      <div className='mt-4'>
+                      <span>Moves: </span><br />
+                      {renderMoves()}
+                      </div>
                     </div>
                   </div>
                 </main>
@@ -115,28 +254,36 @@ export const PCard = ({item,  ...props }) => {
     }
  
     return (
-      <Card sx={{ display: 'flex' }}>
+      <>
+        {renderModal()}
+        <Card sx={{ display: 'flex' }}>
         <Box sx={{ display: 'flex', flexDirection: 'column' }} style={{width: '-webkit-fill-available'}}>
           <CardContent sx={{ flex: '1 0 auto' }}>
-            <Typography component="div" variant="h5">
-              {item.name}
+            <Typography component="div" variant="subtitle1">
+              {item.name ? item.name : item.pokemon.name} #{id}
             </Typography>
           </CardContent>
           <Box sx={{ display: 'flex', alignItems: 'center', pl: 1, pb: 1 }}>
             <ColorButton onClick={handleOpen} variant="outlined" sx={{ fontSize: 'x-small' }}>See more</ColorButton>
-            {renderModal()}
-            <IconButton onClick={addFav(item.url.split("/")[6])} aria-label="favorite">
-              <FavoriteBorderIcon sx={{ color: 'orange' }} />
-            </IconButton>
+            {isFav.includes(id) ? (
+              <IconButton aria-label="delete from favorites" onClick={() => {removeFav(id)}}>
+                <FavoriteIcon sx={{ color: 'orange' }}/>
+              </IconButton>
+            ) : (
+              <IconButton aria-label="add to favorites" onClick={() => {addFav(id)}}>
+                <FavoriteBorderIcon sx={{ color: 'orange' }} />
+              </IconButton>
+            )}
           </Box>
         </Box>
         <CardMedia
           component="img"
           sx={{ width: '50%', height: '120px', objectFit: 'contain', margin: '5px', marginRight: '15px' }}
-          image={image}
-          alt="Live from space album cover"
+          image={checkImage(image)}
+          alt="Pokemon image"
         />
       </Card>
+      </>
     );
 };
 

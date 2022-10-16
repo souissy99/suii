@@ -7,7 +7,7 @@ import SearchBar from "containers/SearchBar";
 export default function Home() {
 
   useEffect(() => {
-    localStorage.getItem('fav_list') === null && localStorage.setItem('fav_list', JSON.stringify([{}]));
+    localStorage.getItem('fav_list') === null && localStorage.setItem('fav_list', JSON.stringify([]));
   }, [])
 
   return (

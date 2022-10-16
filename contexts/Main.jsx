@@ -9,21 +9,16 @@ export function MainProvider({ children }) {
   const [filteredList, setFilteredList] = useState({
     limit: 151,
     offset: 0,
-    type: [''],
+    type: '',
   });
 
   const handleChange = (ev) => {
-    setSearch(ev.target.value);
-
-    // setFilteredApparts(
-    //   data.filter(
-    //     (
-    //       appart // one appart by one
-    //     ) =>
-    //       // filter condition
-    //       appart.title.toLowerCase().includes(ev.target.value.toLowerCase())
-    //   )
-    // );
+    setSearch(ev.target.value)
+    // setPokemonList(
+    //   pokemonList.filter((item) => {
+    //     return item.name.includes(ev.target.value);
+    //   })
+    // )
   };
 
   const handleFiltredList = (ev) => {
@@ -34,7 +29,7 @@ export function MainProvider({ children }) {
   }
 
   return (
-    <MainContext.Provider value={{ search, handleChange, filteredList, handleFiltredList }}>
+    <MainContext.Provider value={{ search, handleChange, filteredList, handleFiltredList, setPokemonList, pokemonList }}>
       {children}
     </MainContext.Provider>
   );
